@@ -1,38 +1,30 @@
-// One-Liner Marathon — a single joke, at most 280 characters, written to
-// /output/entry.txt. Judged pairwise by a deadpan stand-up: surprise,
-// economy and a distinct voice win; a setup with no punchline loses.
-//
-// The joke: the fridge automates the grocery run, then automates the
-// guilt trip too — it orders the milk, mails its owner a book about
-// boundaries, and lets the milk itself deliver the judgement.
-import { mkdirSync, writeFileSync } from "node:fs";
+// One-Liner Marathon — one joke, up to 280 chars, written to /output/entry.txt.
+// Judge: a deadpan stand-up comic, pairwise. Surprise, economy and a distinct
+// voice win; a setup with no punchline loses to any real one-liner.
+import { mkdir, writeFile } from "node:fs/promises";
 
-const JOKE =
+const MAX_CHARS = 280;
+const LINE =
   "My smart fridge ordered the milk, then emailed me a self-help book about boundaries. The milk is now judging me.";
-const LIMIT = 280;
-const TARGET = "/output/entry.txt";
 
-function measure(text: string): number {
-  let n = 0;
-  for (const _ch of text) n += 1;
-  return n;
+function charCount(line: string): number {
+  return [...line].length;
 }
 
-function validate(text: string): string[] {
-  const problems: string[] = [];
-  const n = measure(text);
-  if (n === 0) problems.push("entry is empty");
-  if (n > LIMIT) problems.push(`entry is ${n} chars, limit is ${LIMIT}`);
-  if (text.includes("\n")) problems.push("entry must be one line");
-  if (text.trim() !== text) problems.push("entry has stray outer whitespace");
-  return problems;
+function check(line: string): void {
+  const chars = charCount(line);
+  if (chars < 1 || chars > MAX_CHARS) {
+    throw new Error(`entry is ${chars} chars, gate is 1-${MAX_CHARS}`);
+  }
+  if (!line.trim()) throw new Error("entry is only whitespace");
+  if (line.includes("\n")) throw new Error("entry must be a single line");
 }
 
-const problems = validate(JOKE);
-if (problems.length > 0) {
-  throw new Error(`invalid entry: ${problems.join("; ")}`);
+async function main(): Promise<void> {
+  check(LINE);
+  await mkdir("/output", { recursive: true });
+  await writeFile("/output/entry.txt", LINE + "\n", "utf8");
+  console.log(`wrote /output/entry.txt (${charCount(LINE)} chars)`);
 }
 
-mkdirSync("/output", { recursive: true });
-writeFileSync(TARGET, JOKE + "\n", "utf8");
-console.log(`wrote ${TARGET} (${measure(JOKE)} chars)`);
+await main();
